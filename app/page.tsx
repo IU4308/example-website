@@ -1,17 +1,14 @@
-import Posts from "./components/Posts";
-import MyProfilePic from "./components/MyProfilePic";
+import Posts from './components/Posts';
+import MyProfilePic from './components/MyProfilePic';
 
-export const revalidate = 10
+export const revalidate = 86400;
 
 export default function Home() {
   return (
     <div className="mx-auto">
       <MyProfilePic />
-      <p className="mt-12 mb-12 text-3xl text-center dark:text-white">
-        Welcome 
-        <span className="whitespace-nowrap">
-          &nbsp;to my<span className="font-bold"> Website</span>
-        </span>
+      <p className="mb-12 mt-12 text-center text-3xl dark:text-white">
+        Example <span className="font-bold"> Website </span>
       </p>
       <Posts />
     </div>

@@ -1,63 +1,70 @@
-import getFormattedDate from "@/lib/getFormattedDate"
-import { getPostData, getSortedPostsData } from "@/lib/posts"
-import {notFound} from 'next/navigation'
-import Link from "next/link"
+import getFormattedDate from '@/lib/getFormattedDate';
+import { getPostsMeta, getPostByName } from '@/lib/posts';
+import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import 'highlight.js/styles/github-dark.css'
 
-type ParamsType = Promise<{ postId: string }>
+export const revalidate = 86400;
 
-export function generateStaticParams() {
-    const posts = getSortedPostsData()
+type Props = Promise<{ postId: string }>;
 
-    return posts.map((post) => ({
-        postId: post.id
-    }))
+export async function generateStaticParams() {
+  const posts = await getPostsMeta();
+
+  if(!posts) return []
+
+  return posts.map((post) => ({
+    postId: post.id,
+  }));
 }
 
-export async function generateMetadata( arg: {params: ParamsType} ) {
-    const params = await arg.params
+export async function generateMetadata(props: { params: Props }) {
+  const params = await props.params;
+  const postId = params.postId;
 
-    const posts = getSortedPostsData() //deduped
-    const { postId } = params
+  const post = await getPostByName(`${postId}.mdx`); //deduped
 
-    const post = posts.find(post => post.id === postId)
-
-    if(!post) {
-        return {
-            title: 'Post Not Found'
-        }
-    }
-
+  if (!post) {
     return {
-        title: post.title,
-    }
+      title: 'Post Not Found',
+    };
+  }
 
+  return {
+    title: post.meta.title,
+  };
 }
 
-export default async function Post( arg: {params: ParamsType} ) {
-    const params = await arg.params
-    const posts = getSortedPostsData() //deduped
-    const { postId } = params
+export default async function Post(props: { params: Props }) {
+  const params = await props.params;
+  const postId = params.postId;
 
-    if(!posts.find(post => post.id === postId)) {
-        return notFound()
-    }
+  const post = await getPostByName(`${postId}.mdx`); //deduped
 
-    const { title, date, contentHtml } = await getPostData(postId) 
+  if (!post) notFound();
 
-    const pubDate = getFormattedDate(date)
+  const { meta, content } = post;
+
+  const pubDate = getFormattedDate(meta.date);
+
+  const tags = meta.tags.map((tag, i) => (
+    <Link key={i} href={`/tags/${tag}`}>
+      {tag}
+    </Link>
+  ));
 
   return (
-    <main className="px-6 prose prose-xl prose-slate dark:prose-invert mx-auto">
-            <h1 className="text-3xl mt-4 mb-0">{title}</h1>
-            <p className="mt-0">
-                {pubDate}
-            </p>
-            <article>
-                <section dangerouslySetInnerHTML={{ __html: contentHtml }} />
-                <p>
-                    <Link href="/">← Back to home</Link>
-                </p>
-            </article>
-        </main>
-  )
+    <>
+      <h2 className="mb-0 mt-4 text-3xl">{meta.title}</h2>
+      <p className="mt-0 text-sm">{pubDate}</p>
+      <article>{content}</article>
+      <section>
+        <h3>Related:</h3>
+        <div className="flex flex-row gap-4">{tags}</div>
+      </section>
+      <p className="mb-10">
+        <Link href="/">← Back to home</Link>
+      </p>
+    </>
+  );
 }
